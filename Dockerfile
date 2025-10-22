@@ -42,5 +42,5 @@ RUN uv sync --frozen --active || uv sync --active
 # Now copy source
 COPY --chown=appuser:appuser app /app/app
 
-# Default command shows tool versions (you can override in docker-compose)
-CMD ["uv", "run", "--active", "python", "app/cli.py", "--check"]
+# Default command launches the FastAPI service via uv
+CMD ["uv", "run", "--active", "fastapi", "run", "app/main.py", "--app", "app", "--host", "0.0.0.0", "--port", "8000"]
