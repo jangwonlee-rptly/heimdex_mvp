@@ -1,0 +1,21 @@
+[project]
+name = "heimdex_mvp"
+version = "0.1.0"
+description = "VNA dev environment with ffmpeg/ffprobe, PySceneDetect, and uv"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "scenedetect>=0.6.3",
+  "opencv-python-headless>=4.10.0",
+  "ffmpeg-python>=0.2.0",
+  "python-dotenv>=1.0.1",
+  "rich>=13.7.1"
+]
+
+[tool.uv]
+# uv will create and manage a venv automatically when using `uv sync` or `uv run`.
+# No special config required, but this block is here if you want to extend later.
+
+[tool.pyscenedetect]
+# Example default options you might apply later.
+# min-scene-len = 15
