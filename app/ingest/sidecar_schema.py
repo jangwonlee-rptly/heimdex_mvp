@@ -12,6 +12,8 @@ SchemaPath = Path("derived/schema/vna_sidecar_v0.1.0.json")
 
 
 class HashModel(BaseModel):
+    """Schema for hash information."""
+
     model_config = ConfigDict(extra="forbid")
 
     algo: Literal["sha256", "md5", "weak"]
@@ -19,6 +21,8 @@ class HashModel(BaseModel):
 
 
 class SourceModel(BaseModel):
+    """Schema for source information."""
+
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["local", "gdrive"]
@@ -31,6 +35,8 @@ class SourceModel(BaseModel):
 
 
 class FormatModel(BaseModel):
+    """Schema for format information."""
+
     model_config = ConfigDict(extra="forbid")
 
     container: str
@@ -40,6 +46,8 @@ class FormatModel(BaseModel):
 
 
 class VideoModel(BaseModel):
+    """Schema for video information."""
+
     model_config = ConfigDict(extra="forbid")
 
     codec: str
@@ -54,6 +62,8 @@ class VideoModel(BaseModel):
 
 
 class AudioModel(BaseModel):
+    """Schema for audio information."""
+
     model_config = ConfigDict(extra="forbid")
 
     codec: str
@@ -63,6 +73,8 @@ class AudioModel(BaseModel):
 
 
 class StreamModel(BaseModel):
+    """Schema for stream information."""
+
     model_config = ConfigDict(extra="forbid")
 
     index: int
@@ -80,6 +92,8 @@ class StreamModel(BaseModel):
 
 
 class ThumbnailModel(BaseModel):
+    """Schema for a single thumbnail."""
+
     model_config = ConfigDict(extra="forbid")
 
     timestamp_s: float
@@ -89,6 +103,8 @@ class ThumbnailModel(BaseModel):
 
 
 class ThumbnailsModel(BaseModel):
+    """Schema for a set of thumbnails."""
+
     model_config = ConfigDict(extra="forbid")
 
     poster: ThumbnailModel
@@ -96,6 +112,8 @@ class ThumbnailsModel(BaseModel):
 
 
 class ToolsModel(BaseModel):
+    """Schema for tool information."""
+
     model_config = ConfigDict(extra="forbid")
 
     ffprobe: str
@@ -104,6 +122,8 @@ class ToolsModel(BaseModel):
 
 
 class SelectionPolicyModel(BaseModel):
+    """Schema for the selection policy."""
+
     model_config = ConfigDict(extra="forbid")
 
     video: Literal["first_default_or_highest_resolution"]
@@ -111,6 +131,8 @@ class SelectionPolicyModel(BaseModel):
 
 
 class ProvenanceModel(BaseModel):
+    """Schema for provenance information."""
+
     model_config = ConfigDict(extra="forbid")
 
     ingested_at: str
@@ -122,6 +144,8 @@ class ProvenanceModel(BaseModel):
 
 
 class Sidecar(BaseModel):
+    """The root schema for the sidecar file."""
+
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal[SCHEMA_VERSION] = Field(default=SCHEMA_VERSION)
@@ -138,7 +162,14 @@ class Sidecar(BaseModel):
 
 
 def export_schema(output_path: Path = SchemaPath) -> Path:
-    """Serialise the current schema to disk."""
+    """Serialise the current schema to disk.
+
+    Args:
+        output_path: The path to write the schema to.
+
+    Returns:
+        The path the schema was written to.
+    """
     schema = Sidecar.model_json_schema()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(schema, indent=2, sort_keys=True))

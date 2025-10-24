@@ -10,7 +10,16 @@ THUMB_WIDTH = 320
 
 
 def render_thumbnails(video_path: str, sidecar: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
-    """Generate poster and sample thumbnails according to policy."""
+    """Generate poster and sample thumbnails according to policy.
+
+    Args:
+        video_path: The path to the video file.
+        sidecar: The sidecar metadata.
+        out_dir: The output directory for the thumbnails.
+
+    Returns:
+        The updated sidecar with thumbnail information.
+    """
     manifest = sidecar.get("thumbnails") or {}
     asset_id = sidecar.get("asset_id")
     if not asset_id:
@@ -57,10 +66,28 @@ def render_thumbnails(video_path: str, sidecar: Dict[str, Any], out_dir: Path) -
 
 
 def _timestamp_to_centiseconds(timestamp_s: float) -> int:
+    """Convert a timestamp in seconds to centiseconds.
+
+    Args:
+        timestamp_s: The timestamp in seconds.
+
+    Returns:
+        The timestamp in centiseconds.
+    """
     return int(round(max(timestamp_s, 0.0) * 100))
 
 
 def _extract_and_measure(video_path: str, timestamp: float, output_path: Path) -> Tuple[int, int] | None:
+    """Extract a frame from a video, save it as a thumbnail, and measure its dimensions.
+
+    Args:
+        video_path: The path to the video file.
+        timestamp: The timestamp of the frame to extract.
+        output_path: The path to save the thumbnail to.
+
+    Returns:
+        A tuple containing the width and height of the thumbnail, or None if an error occurred.
+    """
     command = [
         "ffmpeg",
         "-nostdin",
@@ -94,6 +121,14 @@ def _extract_and_measure(video_path: str, timestamp: float, output_path: Path) -
 
 
 def _image_dimensions(image_path: Path) -> Tuple[int, int]:
+    """Get the dimensions of an image.
+
+    Args:
+        image_path: The path to the image.
+
+    Returns:
+        A tuple containing the width and height of the image.
+    """
     image = cv2.imread(str(image_path))
     if image is None:
         raise RuntimeError(f"Failed to read generated thumbnail at {image_path}")

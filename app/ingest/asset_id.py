@@ -21,19 +21,31 @@ HashAlgo = Literal["sha256", "md5", "weak"]
 
 @dataclass(slots=True)
 class HashInfo:
+    """A dataclass to store hash information."""
+
     algo: HashAlgo
     value: str
 
 
 @dataclass(slots=True)
 class AssetIdentity:
+    """A dataclass to store asset identity information."""
+
     asset_id: str
     hash: Optional[HashInfo]
     hash_quality: Optional[WeakOrStrong]
 
 
 def compute_sha256(path: Path, *, chunk_size: int = 8 * 1024 * 1024) -> str:
-    """Return a hexadecimal SHA256 digest for the file."""
+    """Return a hexadecimal SHA256 digest for the file.
+
+    Args:
+        path: The path to the file.
+        chunk_size: The chunk size to use when reading the file.
+
+    Returns:
+        The hexadecimal SHA256 digest.
+    """
     digest = sha256()
     with path.open("rb") as handle:
         while chunk := handle.read(chunk_size):
@@ -46,7 +58,16 @@ def compute_weak_signature(
     size_bytes: Optional[int],
     modified_time: Optional[datetime],
 ) -> str:
-    """Return a deterministic weak fingerprint for the supplied metadata."""
+    """Return a deterministic weak fingerprint for the supplied metadata.
+
+    Args:
+        filename: The filename.
+        size_bytes: The file size in bytes.
+        modified_time: The last modified time.
+
+    Returns:
+        The weak signature.
+    """
     size_component = str(size_bytes) if size_bytes is not None else "unknown"
     if modified_time is not None:
         # Normalise to UTC, ignoring sub-second noise.
@@ -64,7 +85,15 @@ def derive_local_asset_identity(
     *,
     max_bytes_for_strong_hash: Optional[int] = 1_000_000_000,
 ) -> AssetIdentity:
-    """Return the canonical local asset identifier and hash metadata."""
+    """Return the canonical local asset identifier and hash metadata.
+
+    Args:
+        path: The path to the file.
+        max_bytes_for_strong_hash: The maximum file size for which to compute a strong hash.
+
+    Returns:
+        The asset identity.
+    """
     stat = path.stat()
     size_bytes = stat.st_size
     modified_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
@@ -88,7 +117,15 @@ def derive_local_asset_identity(
 
 
 def compose_drive_asset_identity(file_id: str, md5_checksum: Optional[str]) -> AssetIdentity:
-    """Compose the canonical Google Drive asset identifier."""
+    """Compose the canonical Google Drive asset identifier.
+
+    Args:
+        file_id: The Google Drive file ID.
+        md5_checksum: The MD5 checksum of the file.
+
+    Returns:
+        The asset identity.
+    """
     if md5_checksum:
         return AssetIdentity(
             asset_id=f"drive:{file_id}::{md5_checksum}",

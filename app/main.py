@@ -29,7 +29,14 @@ app = FastAPI(
 
 
 def _parse_frame_rate(raw: Optional[str]) -> Optional[float]:
-    """Convert ffprobe's fractional frame rate string (e.g. '30000/1001') into a float."""
+    """Convert ffprobe's fractional frame rate string (e.g. '30000/1001') into a float.
+
+    Args:
+        raw: The raw frame rate string from ffprobe.
+
+    Returns:
+        The frame rate as a float, or None if the input is invalid.
+    """
     if not raw or raw in {"0/0", "N/A"}:
         return None
     try:
@@ -44,7 +51,14 @@ def _parse_frame_rate(raw: Optional[str]) -> Optional[float]:
 
 
 def _bitrate_to_kbps(value: Optional[str]) -> Optional[float]:
-    """Convert bit rate reported in bits/second to kilobits/second."""
+    """Convert bit rate reported in bits/second to kilobits/second.
+
+    Args:
+        value: The bit rate string from ffprobe.
+
+    Returns:
+        The bit rate in kilobits per second, or None if the input is invalid.
+    """
     if not value or value == "N/A":
         return None
     try:
@@ -54,7 +68,15 @@ def _bitrate_to_kbps(value: Optional[str]) -> Optional[float]:
 
 
 def _build_response(data: Dict[str, Any], filename: str) -> schemas.MetadataResponse:
-    """Transform raw ffprobe JSON into the response schema."""
+    """Transform raw ffprobe JSON into the response schema.
+
+    Args:
+        data: The raw ffprobe JSON data.
+        filename: The original filename of the media file.
+
+    Returns:
+        A populated MetadataResponse schema.
+    """
     format_info: Dict[str, Any] = data.get("format", {})
     stream_payload = []
     for stream in data.get("streams", []):
@@ -84,7 +106,14 @@ def _build_response(data: Dict[str, Any], filename: str) -> schemas.MetadataResp
 
 
 def _run_ffprobe(target: Path) -> Dict[str, Any]:
-    """Execute ffprobe and return parsed JSON metadata for the supplied file."""
+    """Execute ffprobe and return parsed JSON metadata for the supplied file.
+
+    Args:
+        target: The path to the media file.
+
+    Returns:
+        A dictionary containing the ffprobe metadata.
+    """
     command = [
         "ffprobe",
         "-v",
@@ -110,13 +139,24 @@ def _run_ffprobe(target: Path) -> Dict[str, Any]:
 
 @app.get("/health", response_model=schemas.HealthResponse)
 def health_check() -> schemas.HealthResponse:
-    """Simple liveness probe used by compose/k8s."""
+    """Simple liveness probe used by compose/k8s.
+
+    Returns:
+        A HealthResponse schema indicating the service is healthy.
+    """
     return schemas.HealthResponse()
 
 
 @app.post("/metadata", response_model=schemas.MetadataResponse)
 async def extract_metadata(file: UploadFile = File(...)) -> schemas.MetadataResponse:
-    """Accept a video upload, persist it temporarily, run ffprobe, and return structured metadata."""
+    """Accept a video upload, persist it temporarily, run ffprobe, and return structured metadata.
+
+    Args:
+        file: The uploaded video file.
+
+    Returns:
+        A MetadataResponse schema containing the extracted metadata.
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="Uploaded file must include a filename.")
 
