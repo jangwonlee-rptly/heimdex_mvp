@@ -1,0 +1,49 @@
+{
+  "format": {
+    "filename": "sample.mov",
+    "nb_streams": 2,
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": "5.000000",
+    "bit_rate": "1000000",
+    "size": "5120000",
+    "tags": {
+      "com.apple.quicktime.creationdate": "2020-05-01T12:34:56-0500",
+      "minor_version": "512",
+      "encoder": "Lavf57.83.100"
+    }
+  },
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "prores",
+      "codec_type": "video",
+      "profile": "apch",
+      "width": 1920,
+      "height": 1080,
+      "sample_aspect_ratio": "1:1",
+      "avg_frame_rate": "24/1",
+      "bit_rate": "800000000",
+      "disposition": {"default": 1},
+      "tags": {
+        "creation_time": "2020-05-01T17:34:56Z",
+        "language": "und"
+      },
+      "color_space": "bt709",
+      "color_transfer": "bt709",
+      "color_primaries": "bt709"
+    },
+    {
+      "index": 1,
+      "codec_name": "pcm_s16le",
+      "codec_type": "audio",
+      "channels": 6,
+      "sample_rate": "48000",
+      "bit_rate": "4608000",
+      "disposition": {"default": 0},
+      "tags": {
+        "creation_time": "2020-05-01T17:34:56Z",
+        "language": "eng"
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "format": {
+    "filename": "sample.mkv",
+    "nb_streams": 2,
+    "format_name": "matroska,webm",
+    "duration": "N/A",
+    "bit_rate": "N/A",
+    "size": "1024",
+    "tags": {
+      "encoder": "Lavf58.45.100"
+    }
+  },
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "h264",
+      "codec_type": "video",
+      "profile": "High",
+      "width": 1280,
+      "height": 720,
+      "sample_aspect_ratio": "1:1",
+      "avg_frame_rate": "0/0",
+      "r_frame_rate": "30000/1001",
+      "bit_rate": "2500000",
+      "disposition": {"default": 0},
+      "tags": {
+        "creation_time": "2023-10-04T09:03:02Z"
+      }
+    },
+    {
+      "index": 1,
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "channels": 2,
+      "sample_rate": "48000",
+      "bit_rate": "192000",
+      "disposition": {"default": 1},
+      "tags": {}
+    }
+  ]
+}
