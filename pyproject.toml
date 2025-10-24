@@ -16,6 +16,13 @@ dependencies = [
   "uvicorn[standard]>=0.31.0"
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "httpx"
+]
+
 [tool.uv]
 # uv will create and manage a venv automatically when using `uv sync` or `uv run`.
 # No special config required, but this block is here if you want to extend later.
