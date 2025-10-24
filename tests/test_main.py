@@ -34,6 +34,7 @@ from app.main import _build_response
 from app.schemas import MetadataResponse, StreamMetadata
 
 from unittest.mock import patch
+import subprocess
 
 from fastapi.testclient import TestClient
 
@@ -49,7 +50,7 @@ def test_health_check():
 
 
 @patch("app.main._run_ffprobe")
-def test_extract_metadata_success(mock_run_ffprobe):
+def test_extract_metadata_success(mock_run_ffprobe, tmp_path):
     mock_run_ffprobe.return_value = {
         "format": {
             "format_long_name": "QuickTime / MOV",
@@ -69,12 +70,25 @@ def test_extract_metadata_success(mock_run_ffprobe):
             }
         ],
     }
-    with open("test.mov", "wb") as f:
-        f.write(b"test")
-    with open("test.mov", "rb") as f:
+    test_file = tmp_path / "test.mov"
+    test_file.write_bytes(b"test")
+    with open(test_file, "rb") as f:
         response = client.post("/metadata", files={"file": ("test.mov", f, "video/quicktime")})
     assert response.status_code == 200
     assert response.json()["filename"] == "test.mov"
+
+
+@patch("app.main._run_ffprobe")
+def test_extract_metadata_ffprobe_fails(mock_run_ffprobe, tmp_path):
+    mock_run_ffprobe.side_effect = subprocess.CalledProcessError(
+        returncode=1, cmd="ffprobe", stderr="ffprobe error"
+    )
+    test_file = tmp_path / "test.mov"
+    test_file.write_bytes(b"test")
+    with open(test_file, "rb") as f:
+        response = client.post("/metadata", files={"file": ("test.mov", f, "video/quicktime")})
+    assert response.status_code == 422
+    assert "ffprobe failed: ffprobe error" in response.json()["detail"]
 
 
 def test_build_response():
@@ -130,3 +144,11 @@ def test_build_response():
         ],
     )
     assert _build_response(ffprobe_data, "test.mov") == expected
+
+
+def test_run_ffprobe_integration(generated_video_file):
+    from app.main import _run_ffprobe
+
+    metadata = _run_ffprobe(generated_video_file)
+    assert "mov" in metadata["format"]["format_name"]
+    assert "video" in [stream["codec_type"] for stream in metadata["streams"]]
