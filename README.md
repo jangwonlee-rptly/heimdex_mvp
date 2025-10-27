@@ -83,13 +83,16 @@ curl -s http://localhost:8000/v1/assets/<asset_id>/sidecar -H "${AUTH}"
 
 ## Development
 
-- **Tests**: `uv run pytest`
+- **Tests**: `uv run pytest` (Docker image installs test extras and sets `PYTHONPATH=/app`, so imports resolve out of the box).
 - **Formatting/Linting**: managed via `uv` (add tools as needed).
 - **OpenAPI**: regenerate with `uv run python -c "from app.main import app; import json, pathlib; pathlib.Path('openapi.json').write_text(json.dumps(app.openapi(), indent=2))"`.
 
 ## Simple Metadata Endpoint
 
-If you only need synchronous metadata extraction, the service exposes a thin wrapper around `ffprobe`:
+The upload-based `/metadata` route is considered legacy and is **disabled by default**. Set
+`HEIMDEX_ENABLE_LEGACY=true` at process start if you need to re-enable it temporarily for migration period.
+
+If you only need synchronous metadata extraction, the service exposes this thin wrapper around `ffprobe` when enabled:
 
 - `POST /metadata`: Accepts a video upload and returns structured metadata.
 - `GET /health`: Basic liveness probe.

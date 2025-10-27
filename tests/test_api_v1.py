@@ -1,9 +1,23 @@
 from __future__ import annotations
 
+import pytest
+from fastapi.testclient import TestClient
+
+from app.core.config import get_settings
+from app.main import create_app
 from tests.conftest import uri_to_path
 
 
-def test_health(client):
+@pytest.fixture()
+def legacy_enabled_client(monkeypatch, configure_environment):
+    monkeypatch.setenv("HEIMDEX_ENABLE_LEGACY", "true")
+    get_settings.cache_clear()
+    app = create_app()
+    with TestClient(app) as client:
+        yield client
+
+
+def test_v1_health_ok(client):
     resp = client.get("/v1/health")
     assert resp.status_code == 200
     payload = resp.json()
@@ -143,3 +157,27 @@ def test_thumbnail_job_idempotency(client, admin_headers, generated_video_file):
         headers={**admin_headers, "Idempotency-Key": key},
     )
     assert conflict_resp.status_code == 409
+
+
+def test_legacy_metadata_absent_by_default(client):
+    resp = client.get("/metadata")
+    assert resp.status_code in {404, 405}
+
+
+def test_legacy_metadata_can_be_enabled_with_flag(legacy_enabled_client, generated_video_file):
+    with generated_video_file.open("rb") as handle:
+        resp = legacy_enabled_client.post(
+            "/metadata",
+            files={"file": ("sample.mp4", handle, "video/mp4")},
+        )
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["filename"] == "sample.mp4"
+
+
+def test_openapi_excludes_legacy_by_default(client):
+    resp = client.get("/openapi.json")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert "/metadata" not in payload["paths"]
+    assert "/v1/health" in payload["paths"]

@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     VIRTUAL_ENV=/opt/venv \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PYTHONPATH=/app \
     PATH="/opt/venv/bin:/home/appuser/.local/bin:/root/.local/bin:${PATH}"
 
 # System deps: ffmpeg/ffprobe + build essentials (kept slim)
@@ -36,8 +37,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # Copy only dependency file first for layer caching
 COPY --chown=appuser:appuser pyproject.toml /app/pyproject.toml
 
-# Install deps into the venv (no dev extras yet)
-RUN uv sync --frozen --active || uv sync --active
+# Install deps into the venv (include test extras so pytest is always available)
+RUN uv sync --frozen --extra test --active || uv sync --extra test --active
 
 # Now copy source
 COPY --chown=appuser:appuser app /app/app

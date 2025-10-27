@@ -11,7 +11,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Centralised runtime configuration for the Heimdex API."""
 
-    model_config = SettingsConfigDict(env_prefix="HEIMDEX_", env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_prefix="HEIMDEX_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "Heimdex API"
     environment: str = Field(default="local", description="Deployment environment label.")
@@ -28,6 +33,7 @@ class Settings(BaseSettings):
     )
 
     max_upload_size_bytes: int = Field(default=50 * 1024 * 1024, description="Soft limit for ingest uploads.")
+    enable_legacy: bool = Field(default=False, description="Enable legacy /metadata endpoints temporarily.")
 
     jwt_secret: str = Field(default="change-me", description="Signing secret for stub JWT validation.")
     jwt_algorithm: str = Field(default="HS256", description="Algorithm used for JWT tokens.")
@@ -58,4 +64,3 @@ def get_settings() -> Settings:
 
 
 __all__ = ["Settings", "get_settings"]
-
