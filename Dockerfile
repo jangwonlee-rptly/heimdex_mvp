@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     VIRTUAL_ENV=/opt/venv \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
-    PATH="/opt/venv/bin:${PATH}"
+    PATH="/opt/venv/bin:/root/.local/bin:${PATH}"
 
 # Install system dependencies required for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install uv and create a virtual environment
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN ln -s /root/.local/bin/uv /usr/local/bin/uv
 RUN uv venv ${VIRTUAL_ENV}
 
 WORKDIR /app
@@ -49,6 +50,7 @@ WORKDIR /app
 
 # Copy the virtual environment and application code from the builder stage
 COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 COPY --chown=appuser:appuser app /app/app
 COPY --chown=appuser:appuser migrations /app/migrations
 COPY --chown=appuser:appuser alembic.ini /app/alembic.ini

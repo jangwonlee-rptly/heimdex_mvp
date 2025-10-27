@@ -35,7 +35,7 @@ TOKEN=$(curl -s -X POST http://localhost:8000/v1/admin/dev-token \
 curl -s -X POST http://localhost:8000/v1/ingest/commit \
   -H "Authorization: Bearer ${TOKEN}" \
   -H 'Content-Type: application/json' \
-  -d '{"org_id":"org-demo","upload_id":"local-1","source_uri":"file:///app/derived/uploads/demo.mp4"}'
+  -d '{"org_id":"org-demo","upload_id":"local-1","source_uri":"file:///app/derived/sample3.mp4"}'
 ```
 
 ## Getting Started
