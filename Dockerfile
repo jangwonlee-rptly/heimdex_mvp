@@ -41,6 +41,9 @@ RUN uv sync --frozen --active || uv sync --active
 
 # Now copy source
 COPY --chown=appuser:appuser app /app/app
+COPY --chown=appuser:appuser migrations /app/migrations
+COPY --chown=appuser:appuser alembic.ini /app/alembic.ini
+
 
 # Default command launches the FastAPI service via uv
 CMD ["uv", "run", "--active", "fastapi", "run", "app/main.py", "--app", "app", "--host", "0.0.0.0", "--port", "8000"]
