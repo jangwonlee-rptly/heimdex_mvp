@@ -14,15 +14,36 @@ from app.core.jobs import get_job_backend
 from app.main import create_app
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "no_default_env: disable the default Heimdex environment bootstrap fixture for tests that manage their own .env",
+    )
+
+
 @pytest.fixture(autouse=True)
-def configure_environment(monkeypatch, tmp_path):
+def configure_environment(request, monkeypatch, tmp_path):
+    if request.node.get_closest_marker("no_default_env"):
+        get_settings.cache_clear()
+        get_job_backend.cache_clear()
+        yield
+        get_job_backend.cache_clear()
+        get_settings.cache_clear()
+        return
     db_path = tmp_path / "heimdex_test.db"
     derived_root = tmp_path / "derived"
 
-    monkeypatch.setenv("HEIMDEX_DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+    monkeypatch.setenv("HEIMDEX_ENV", "test")
+    monkeypatch.setenv("HEIMDEX_LOG_LEVEL", "debug")
+    monkeypatch.setenv("HEIMDEX_DB_URL", f"sqlite+aiosqlite:///{db_path}")
     monkeypatch.setenv("HEIMDEX_DERIVED_ROOT", str(derived_root))
-    monkeypatch.setenv("HEIMDEX_JOB_QUEUE_BACKEND", "immediate")
+    monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "local")
+    monkeypatch.setenv("HEIMDEX_JOB_BACKEND", "inline")
+    monkeypatch.setenv("HEIMDEX_REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("HEIMDEX_JWT_SECRET", "test-secret")
+    monkeypatch.setenv("HEIMDEX_JWT_ISSUER", "heimdex-test")
+    monkeypatch.setenv("HEIMDEX_JWT_AUDIENCE", "heimdex")
+    monkeypatch.setenv("HEIMDEX_ENABLE_LEGACY", "false")
 
     get_settings.cache_clear()
     get_job_backend.cache_clear()

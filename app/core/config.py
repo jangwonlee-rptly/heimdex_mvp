@@ -1,11 +1,32 @@
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
+from dotenv import load_dotenv
 from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+load_dotenv(".env", override=False)
+
+_ENV_ALIAS_MAP = {
+    "HEIMDEX_ENV": "HEIMDEX_ENVIRONMENT",
+    "HEIMDEX_DB_URL": "HEIMDEX_DATABASE_URL",
+    "HEIMDEX_JOB_BACKEND": "HEIMDEX_JOB_QUEUE_BACKEND",
+}
+
+
+def _apply_env_aliases() -> None:
+    for source, target in _ENV_ALIAS_MAP.items():
+        value = os.getenv(source)
+        if value:
+            os.environ[target] = value
+
+
+_apply_env_aliases()
 
 
 class Settings(BaseSettings):
@@ -19,11 +40,21 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Heimdex API"
-    environment: str = Field(default="local", description="Deployment environment label.")
+    environment: str = Field(default="development", description="Deployment environment label.")
     version: str = Field(default="0.1.0", description="API version for metadata and OpenAPI.")
+    log_level: str = Field(default="info")
 
-    database_url: str = Field(default="sqlite+aiosqlite:///./heimdex.db", description="SQLAlchemy compatible DSN.")
-    redis_url: str = Field(default="redis://localhost:6379/0", description="Redis URL for background jobs.")
+    auth_provider: str = Field(default="local")
+    firebase_project_id: Optional[str] = None
+
+    database_url: str = Field(
+        default="sqlite+aiosqlite:///./heimdex.db",
+        description="SQLAlchemy compatible DSN.",
+    )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis URL for background jobs.",
+    )
 
     derived_root: Path = Field(default_factory=lambda: Path("derived"), description="Root for derived artefacts.")
     storage_backend: Literal["local", "gcs"] = Field(default="local", description="Active storage implementation.")
@@ -37,12 +68,14 @@ class Settings(BaseSettings):
 
     jwt_secret: str = Field(default="change-me", description="Signing secret for stub JWT validation.")
     jwt_algorithm: str = Field(default="HS256", description="Algorithm used for JWT tokens.")
+    jwt_issuer: Optional[str] = None
+    jwt_audience: Optional[str] = None
 
     idempotency_ttl_seconds: int = Field(default=24 * 3600, description="TTL for stored idempotency keys.")
 
-    job_queue_backend: Literal["immediate", "rq"] = Field(
+    job_queue_backend: Literal["immediate", "inline", "rq", "gcp_tasks"] = Field(
         default="immediate",
-        description="Backend for async jobs (immediate executes inline; rq schedules via Redis).",
+        description="Backend for async jobs (inline executes inline; rq schedules via Redis).",
     )
     job_max_retries: int = Field(default=3, description="Maximum retry attempts for failed jobs.")
     job_retry_backoff_base: float = Field(default=2.0, description="Backoff multiplier between retries.")
@@ -56,9 +89,28 @@ class Settings(BaseSettings):
         default=None,
         description="Optional push endpoint for metrics exporters.",
     )
+    gcp_project_id: Optional[str] = None
+    gcs_bucket: Optional[str] = None
+    gcp_signing_service_account: Optional[str] = None
+    gcp_signing_key_path: Optional[Path] = None
+
+    @property
+    def environment_lower(self) -> str:
+        return self.environment.lower()
+
+    @property
+    def normalized_job_backend(self) -> str:
+        if self.job_queue_backend == "inline":
+            return "immediate"
+        return self.job_queue_backend
 
     @property
     def allowed_source_uri_schemes(self) -> tuple[str, ...]:
+        override = os.getenv("HEIMDEX_ALLOWED_SOURCE_URI_SCHEMES")
+        if override:
+            values = [item.strip() for item in override.split(",") if item.strip()]
+            if values:
+                return tuple(values)
         if self.storage_backend == "gcs":
             return ("gs", "file")
         return ("file",)
@@ -66,6 +118,8 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
+    load_dotenv(".env", override=False)
+    _apply_env_aliases()
     return Settings()
 
 

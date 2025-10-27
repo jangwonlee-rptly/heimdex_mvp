@@ -1,5 +1,6 @@
 services:
   postgres:
+    profiles: ["dev"]
     image: postgres:15-alpine
     container_name: vna-postgres
     environment:
@@ -12,12 +13,14 @@ services:
       - "5432:5432"
 
   redis:
+    profiles: ["dev"]
     image: redis:7-alpine
     container_name: vna-redis
     ports:
       - "6379:6379"
 
   vna:
+    profiles: ["dev"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -28,9 +31,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
       - TZ=${TZ:-Asia/Seoul}
-      - HEIMDEX_DATABASE_URL=${HEIMDEX_DATABASE_URL:-postgresql+asyncpg://heimdex:heimdex@postgres:5432/heimdex}
-      - HEIMDEX_REDIS_URL=${HEIMDEX_REDIS_URL:-redis://redis:6379/0}
-      - HEIMDEX_STORAGE_BACKEND=${HEIMDEX_STORAGE_BACKEND:-local}
     working_dir: /app
     volumes:
       - ./app:/app/app:rw

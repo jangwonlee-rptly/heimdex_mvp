@@ -15,6 +15,7 @@ def clear_settings_cache():
 
 def test_default_backend_is_local(monkeypatch):
     monkeypatch.delenv("HEIMDEX_STORAGE_BACKEND", raising=False)
+    get_settings.cache_clear()
     settings = get_settings()
     storage = get_storage(settings)
     assert isinstance(storage, LocalStorage)
@@ -24,6 +25,7 @@ def test_default_backend_is_local(monkeypatch):
 
 def test_selecting_gcs_returns_gcs_storage(monkeypatch):
     monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "gcs")
+    get_settings.cache_clear()
     settings = get_settings()
     storage = get_storage(settings)
     assert isinstance(storage, GCSStorage)
@@ -31,11 +33,14 @@ def test_selecting_gcs_returns_gcs_storage(monkeypatch):
 
 def test_allowed_schemes_reflect_backend(monkeypatch):
     monkeypatch.delenv("HEIMDEX_STORAGE_BACKEND", raising=False)
+    monkeypatch.delenv("HEIMDEX_ALLOWED_SOURCE_URI_SCHEMES", raising=False)
+    get_settings.cache_clear()
     settings_local = get_settings()
     assert settings_local.storage_backend == "local"
     assert "gs" not in settings_local.allowed_source_uri_schemes
 
     monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "gcs")
+    monkeypatch.delenv("HEIMDEX_ALLOWED_SOURCE_URI_SCHEMES", raising=False)
     get_settings.cache_clear()
     settings_gcs = get_settings()
     assert settings_gcs.storage_backend == "gcs"
@@ -44,6 +49,7 @@ def test_allowed_schemes_reflect_backend(monkeypatch):
 
 def test_parse_gs_uri_success(monkeypatch):
     monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "gcs")
+    get_settings.cache_clear()
     settings = get_settings()
     storage = get_storage(settings)
     assert isinstance(storage, GCSStorage)
@@ -63,6 +69,7 @@ def test_parse_gs_uri_success(monkeypatch):
 )
 def test_parse_gs_uri_errors(monkeypatch, uri):
     monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "gcs")
+    get_settings.cache_clear()
     settings = get_settings()
     storage = get_storage(settings)
     assert isinstance(storage, GCSStorage)

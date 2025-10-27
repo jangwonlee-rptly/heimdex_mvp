@@ -38,11 +38,14 @@ class RQJobBackend(BaseJobBackend):
 @lru_cache()
 def get_job_backend() -> BaseJobBackend:
     settings = get_settings()
-    if settings.job_queue_backend == "immediate":
+    backend = settings.normalized_job_backend
+    if backend == "immediate":
         return ImmediateJobBackend()
-    if settings.job_queue_backend == "rq":  # pragma: no cover - requires redis
+    if backend == "rq":  # pragma: no cover - requires redis
         connection = Redis.from_url(settings.redis_url)
         return RQJobBackend(Queue("heimdex-jobs", connection=connection))
+    if backend == "gcp_tasks":  # pragma: no cover - placeholder
+        raise NotImplementedError("GCP Tasks backend not yet implemented")
     raise ValueError(f"Unsupported job backend: {settings.job_queue_backend}")
 
 

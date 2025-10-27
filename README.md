@@ -14,11 +14,35 @@ The API accepts direct-uploaded media, orchestrates validation plus sidecar gene
 - JWT guard stub that extracts `org_id` (and optionally scopes) for tenancy enforcement.
 - Structured logging via `structlog`, ready for enrichment with metrics hooks.
 
+## Quickstart (No Shell Exports)
+
+1. Copy the appropriate template: `cp .env.example.dev .env`
+2. Start the stack: `docker compose --profile dev up -d` *(or `make dev-up`)*
+3. Verify health: `curl http://localhost:8000/v1/health`
+4. Mint a development token (dev only):
+   ```bash
+   curl -s -X POST http://localhost:8000/v1/admin/dev-token \
+     -H 'Content-Type: application/json' \
+     -d '{"org_id":"org-demo","scopes":["admin"]}'
+   ```
+5. Use the token to hit `/v1/ingest/commit` with a bind-mounted `file://` URI (example below).
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/v1/admin/dev-token \
+  -H 'Content-Type: application/json' \
+  -d '{"org_id":"org-demo","scopes":["admin"]}' | jq -r .token)
+
+curl -s -X POST http://localhost:8000/v1/ingest/commit \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d '{"org_id":"org-demo","upload_id":"local-1","source_uri":"file:///app/derived/uploads/demo.mp4"}'
+```
+
 ## Getting Started
 
 ```bash
-# Build and launch Postgres, Redis, and the API
-docker compose up --build
+# Build and launch Postgres, Redis, and the API using the dev profile
+docker compose --profile dev up --build -d
 
 # Apply migrations (executed once per environment)
 docker compose exec vna uv run alembic upgrade head
@@ -86,11 +110,20 @@ curl -s http://localhost:8000/v1/assets/<asset_id>/sidecar -H "${AUTH}"
 - **Tests**: `uv run pytest` (Docker image installs test extras and sets `PYTHONPATH=/app`, so imports resolve out of the box).
 - **Formatting/Linting**: managed via `uv` (add tools as needed).
 - **OpenAPI**: regenerate with `uv run python -c "from app.main import app; import json, pathlib; pathlib.Path('openapi.json').write_text(json.dumps(app.openapi(), indent=2))"`.
+- **Make targets**: `make dev-up`, `make dev-down`, and `make test` wrap the most common Compose flows.
 
 ## Storage Backend Selection
 
 - Default: local filesystem (`HEIMDEX_STORAGE_BACKEND=local`), accepting only `file://` URIs.
 - Experimental: set `HEIMDEX_STORAGE_BACKEND=gcs` to allow `gs://` URIs. The GCS backend is a stub for now (methods raise `NotImplementedError`) but lets integrators exercise request paths.
+
+### Environment Templates
+
+- `.env.example.dev` – local development (inline jobs, local storage, HS256 auth helper).
+- `.env.example.staging` – staging defaults (GCS, Firebase/JWT placeholders, Cloud SQL endpoints to fill in later).
+- `.env.example.prod` – production defaults mirroring staging but tuned for hardened retries.
+
+Copy the relevant template to `.env` before bringing up Compose. No additional shell exports are required.
 
 ## Simple Metadata Endpoint
 

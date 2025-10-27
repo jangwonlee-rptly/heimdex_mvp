@@ -41,3 +41,8 @@ test = [
 [tool.pyscenedetect]
 # Example default options you might apply later.
 # min-scene-len = 15
+
+[tool.pytest.ini_options]
+markers = [
+  "no_default_env: disable the default Heimdex environment bootstrap fixture for tests that manage their own .env",
+]

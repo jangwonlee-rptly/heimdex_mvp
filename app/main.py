@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import tempfile
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -154,7 +155,8 @@ async def extract_metadata(file: UploadFile = File(...)) -> schemas.MetadataResp
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    configure_logging()
+    log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    configure_logging(level=log_level)
     storage = get_storage(settings)
     engine = create_engine(settings)
     session_factory = create_session_factory(engine)
