@@ -20,6 +20,11 @@ console = Console()
 
 
 def main(argv: Optional[list[str]] = None) -> None:
+    """The main entry point for the CLI.
+
+    Args:
+        argv: The command-line arguments.
+    """
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -35,6 +40,11 @@ def main(argv: Optional[list[str]] = None) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the CLI.
+
+    Returns:
+        The argument parser.
+    """
     parser = argparse.ArgumentParser(description="Heimdex ingest developer CLI")
     parser.add_argument("--check", action="store_true", help="Validate presence of ffmpeg/ffprobe dependencies")
 
@@ -80,12 +90,22 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _cmd_probe(args: argparse.Namespace) -> None:
+    """Run ffprobe and print the normalised sidecar JSON.
+
+    Args:
+        args: The command-line arguments.
+    """
     media_path = Path(args.file).expanduser().resolve()
     sidecar = _build_sidecar_for_file(media_path, max_bytes_for_strong_hash=args.weak_threshold_bytes)
     console.print_json(data=sidecar)
 
 
 def _cmd_thumbs(args: argparse.Namespace) -> None:
+    """Generate thumbnails and print updated JSON.
+
+    Args:
+        args: The command-line arguments.
+    """
     media_path = Path(args.file).expanduser().resolve()
     sidecar = _build_sidecar_for_file(
         media_path,
@@ -97,6 +117,11 @@ def _cmd_thumbs(args: argparse.Namespace) -> None:
 
 
 def _cmd_sidecar(args: argparse.Namespace) -> None:
+    """Parse, generate thumbnails, and write the sidecar.
+
+    Args:
+        args: The command-line arguments.
+    """
     media_path = Path(args.file).expanduser().resolve()
     derived_root = Path(args.derived_root).expanduser().resolve()
 
@@ -127,6 +152,16 @@ def _build_sidecar_for_file(
     asset_id_override: Optional[str] = None,
     max_bytes_for_strong_hash: Optional[int] = None,
 ):
+    """Build the sidecar for a given media file.
+
+    Args:
+        media_path: The path to the media file.
+        asset_id_override: An optional asset ID to override the derived one.
+        max_bytes_for_strong_hash: The maximum file size for which to compute a strong hash.
+
+    Returns:
+        The sidecar dictionary.
+    """
     if not media_path.exists():
         console.print(f"[red]File not found: {media_path}[/]")
         sys.exit(2)
@@ -148,6 +183,16 @@ def _build_local_source_context(
     *,
     asset_id_override: Optional[str] = None,
 ) -> SourceContext:
+    """Build the source context for a local media file.
+
+    Args:
+        media_path: The path to the media file.
+        identity: The asset identity.
+        asset_id_override: An optional asset ID to override the derived one.
+
+    Returns:
+        The source context.
+    """
     stat = media_path.stat()
     created_time = _stat_birthtime(stat)
     modified_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
@@ -166,6 +211,14 @@ def _build_local_source_context(
 
 
 def _stat_birthtime(stat_result: os.stat_result) -> Optional[datetime]:
+    """Get the birth time of a file from a stat result.
+
+    Args:
+        stat_result: The stat result.
+
+    Returns:
+        The birth time, or None if it's not available.
+    """
     birth_time = getattr(stat_result, "st_birthtime", None)
     if birth_time is not None:
         return datetime.fromtimestamp(birth_time, tz=timezone.utc)
@@ -173,6 +226,14 @@ def _stat_birthtime(stat_result: os.stat_result) -> Optional[datetime]:
 
 
 def _run_ffprobe(target: Path) -> dict:
+    """Run ffprobe on a media file.
+
+    Args:
+        target: The path to the media file.
+
+    Returns:
+        The ffprobe output as a dictionary.
+    """
     command = [
         "ffprobe",
         "-v",
@@ -192,6 +253,7 @@ def _run_ffprobe(target: Path) -> dict:
 
 
 def _run_environment_check() -> None:
+    """Check for the presence of required external dependencies."""
     checks = {
         "ffmpeg": ["ffmpeg", "-version"],
         "ffprobe": ["ffprobe", "-version"],

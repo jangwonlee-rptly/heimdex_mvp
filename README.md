@@ -2,6 +2,10 @@
 
 Heimdex transforms raw video into structured, queryable metadata. This repository promotes the original CLI ingest tool to a FastAPI service with multi-tenant awareness, asynchronous job orchestration, and pluggable storage.
 
+## Project Overview
+
+The API accepts direct-uploaded media, orchestrates validation plus sidecar generation (thumbnails + schema), and surfaces job status and derived artifacts through a `/v1` surface. It is designed to slot into larger media-processing pipelines that need deterministic asset metadata with org-scoped isolation.
+
 ## Features
 - FastAPI `/v1` surface covering ingest init/commit, ffprobe probing, thumbnail + sidecar generation, asset metadata, job tracking, and admin health checks.
 - Async job runner abstraction with inline (development) execution and Redis/RQ support for production workers.
@@ -82,6 +86,23 @@ curl -s http://localhost:8000/v1/assets/<asset_id>/sidecar -H "${AUTH}"
 - **Tests**: `uv run pytest`
 - **Formatting/Linting**: managed via `uv` (add tools as needed).
 - **OpenAPI**: regenerate with `uv run python -c "from app.main import app; import json, pathlib; pathlib.Path('openapi.json').write_text(json.dumps(app.openapi(), indent=2))"`.
+
+## Simple Metadata Endpoint
+
+If you only need synchronous metadata extraction, the service exposes a thin wrapper around `ffprobe`:
+
+- `POST /metadata`: Accepts a video upload and returns structured metadata.
+- `GET /health`: Basic liveness probe.
+
+Pair the API with the CLI below for quick checks during development.
+
+## Command-Line Interface (CLI)
+
+The project still ships with the original CLI for local workflows and scripts.
+
+```bash
+uv run python -m app.cli --help
+```
 
 ### Worker & Queue
 

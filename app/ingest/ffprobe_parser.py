@@ -19,6 +19,8 @@ PARSER_VERSION = "heimdex.ingest/0.1.0"
 
 @dataclass(slots=True)
 class SourceContext:
+    """A dataclass to store source context information."""
+
     type: Literal["local", "gdrive"]
     uri: str
     filename: str
@@ -33,7 +35,15 @@ class SourceContext:
 
 
 def parse_ffprobe_json(raw: Dict[str, Any], source_ctx: SourceContext) -> SidecarDict:
-    """Normalise ffprobe JSON into the canonical sidecar representation."""
+    """Normalise ffprobe JSON into the canonical sidecar representation.
+
+    Args:
+        raw: The raw ffprobe JSON.
+        source_ctx: The source context.
+
+    Returns:
+        The normalised sidecar.
+    """
     ingested_at = datetime.now(timezone.utc)
     warnings: List[str] = []
     errors: List[str] = []
@@ -112,6 +122,14 @@ def parse_ffprobe_json(raw: Dict[str, Any], source_ctx: SourceContext) -> Sideca
 
 
 def _initial_thumbnail_manifest(duration_s: float) -> Dict[str, Any]:
+    """Return the initial thumbnail manifest.
+
+    Args:
+        duration_s: The duration of the media in seconds.
+
+    Returns:
+        The initial thumbnail manifest.
+    """
     poster_time = 0.0
     if duration_s and duration_s > 0:
         poster_time = duration_s / 2.0
@@ -134,12 +152,28 @@ def _initial_thumbnail_manifest(duration_s: float) -> Dict[str, Any]:
 
 
 def _hash_dict(hash_info: Optional[HashInfo]) -> Optional[Dict[str, str]]:
+    """Return a dictionary representation of a HashInfo object.
+
+    Args:
+        hash_info: The HashInfo object.
+
+    Returns:
+        A dictionary representation of the HashInfo object.
+    """
     if not hash_info:
         return None
     return {"algo": hash_info.algo, "value": hash_info.value}
 
 
 def _normalise_tags(tags: Optional[Dict[str, Any]]) -> Dict[str, str]:
+    """Normalise ffprobe tags.
+
+    Args:
+        tags: The ffprobe tags.
+
+    Returns:
+        The normalised tags.
+    """
     if not tags:
         return {}
     normalised: Dict[str, str] = {}
@@ -154,6 +188,14 @@ def _normalise_tags(tags: Optional[Dict[str, Any]]) -> Dict[str, str]:
 
 
 def _parse_duration(raw_value: Any) -> Tuple[float, Optional[str]]:
+    """Parse the duration from ffprobe.
+
+    Args:
+        raw_value: The raw duration value.
+
+    Returns:
+        A tuple containing the duration in seconds and an optional warning.
+    """
     if raw_value in (None, "N/A", ""):
         return 0.0, "duration_unavailable"
     try:
@@ -163,6 +205,14 @@ def _parse_duration(raw_value: Any) -> Tuple[float, Optional[str]]:
 
 
 def _parse_bitrate_kbps(raw_value: Any) -> Optional[int]:
+    """Parse the bitrate from ffprobe.
+
+    Args:
+        raw_value: The raw bitrate value.
+
+    Returns:
+        The bitrate in kbps, or None if it's not available.
+    """
     if raw_value in (None, "N/A", ""):
         return None
     try:
@@ -172,6 +222,14 @@ def _parse_bitrate_kbps(raw_value: Any) -> Optional[int]:
 
 
 def _parse_streams(streams: Iterable[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Parse the streams from ffprobe.
+
+    Args:
+        streams: The streams from ffprobe.
+
+    Returns:
+        A tuple containing the parsed streams, video streams, and audio streams.
+    """
     payload: List[Dict[str, Any]] = []
     video_streams: List[Dict[str, Any]] = []
     audio_streams: List[Dict[str, Any]] = []
@@ -204,6 +262,14 @@ def _parse_streams(streams: Iterable[Dict[str, Any]]) -> Tuple[List[Dict[str, An
 
 
 def _normalise_stream_type(value: Any) -> StreamType:
+    """Normalise the stream type.
+
+    Args:
+        value: The raw stream type.
+
+    Returns:
+        The normalised stream type.
+    """
     if not isinstance(value, str):
         return "other"
     value_lower = value.lower()
@@ -213,6 +279,14 @@ def _normalise_stream_type(value: Any) -> StreamType:
 
 
 def _int_or_none(value: Any) -> Optional[int]:
+    """Return an integer or None.
+
+    Args:
+        value: The raw value.
+
+    Returns:
+        The integer value, or None if it's not a valid integer.
+    """
     if value in (None, "N/A", ""):
         return None
     try:
@@ -222,6 +296,14 @@ def _int_or_none(value: Any) -> Optional[int]:
 
 
 def _disposition_default(disposition: Any) -> Optional[bool]:
+    """Return the default disposition.
+
+    Args:
+        disposition: The disposition dictionary.
+
+    Returns:
+        The default disposition, or None if it's not available.
+    """
     if not isinstance(disposition, dict):
         return None
     default_value = disposition.get("default")
@@ -231,12 +313,28 @@ def _disposition_default(disposition: Any) -> Optional[bool]:
 
 
 def _rational_string(value: Any) -> Optional[str]:
+    """Return a rational number as a string.
+
+    Args:
+        value: The raw value.
+
+    Returns:
+        The rational number as a string, or None if it's not available.
+    """
     if not value or value in {"N/A"}:
         return None
     return str(value)
 
 
 def _summarise_video_stream(streams: List[Dict[str, Any]]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Summarise the video stream.
+
+    Args:
+        streams: The video streams.
+
+    Returns:
+        A tuple containing the video summary and an optional warning.
+    """
     if not streams:
         return None, None
 
@@ -263,6 +361,14 @@ def _summarise_video_stream(streams: List[Dict[str, Any]]) -> Tuple[Optional[Dic
 
 
 def _select_video_stream(streams: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Select the video stream to use.
+
+    Args:
+        streams: The video streams.
+
+    Returns:
+        The selected video stream.
+    """
     default_streams = [
         stream for stream in streams if _disposition_default(stream.get("disposition")) is True
     ]
@@ -279,6 +385,14 @@ def _select_video_stream(streams: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _summarise_audio_stream(streams: List[Dict[str, Any]]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Summarise the audio stream.
+
+    Args:
+        streams: The audio streams.
+
+    Returns:
+        A tuple containing the audio summary and an optional warning.
+    """
     if not streams:
         return None, "no_audio_stream"
 
@@ -295,6 +409,14 @@ def _summarise_audio_stream(streams: List[Dict[str, Any]]) -> Tuple[Optional[Dic
 
 
 def _select_audio_stream(streams: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Select the audio stream to use.
+
+    Args:
+        streams: The audio streams.
+
+    Returns:
+        The selected audio stream.
+    """
     default_streams = [
         stream for stream in streams if _disposition_default(stream.get("disposition")) is True
     ]
@@ -311,6 +433,14 @@ def _select_audio_stream(streams: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _frame_rate_from_stream(payload: Dict[str, Any]) -> Optional[float]:
+    """Get the frame rate from a stream.
+
+    Args:
+        payload: The stream payload.
+
+    Returns:
+        The frame rate, or None if it's not available.
+    """
     for key in ("avg_frame_rate", "r_frame_rate"):
         value = payload.get(key)
         rate = _parse_rational(value)
@@ -320,6 +450,14 @@ def _frame_rate_from_stream(payload: Dict[str, Any]) -> Optional[float]:
 
 
 def _parse_rational(value: Optional[str]) -> Optional[float]:
+    """Parse a rational number.
+
+    Args:
+        value: The rational number as a string.
+
+    Returns:
+        The parsed rational number, or None if it's not valid.
+    """
     if not value or value in {"0/0", "N/A"}:
         return None
     if "/" not in value:
@@ -340,6 +478,14 @@ def _parse_rational(value: Optional[str]) -> Optional[float]:
 
 
 def _parse_sample_aspect_ratio(value: Any) -> float:
+    """Parse the sample aspect ratio.
+
+    Args:
+        value: The raw sample aspect ratio.
+
+    Returns:
+        The parsed sample aspect ratio.
+    """
     if not value or value in {"0:1", "N/A"}:
         return 1.0
     if isinstance(value, (int, float)):
@@ -365,6 +511,17 @@ def _determine_created_time(
     streams: List[Dict[str, Any]],
     default_fallback: datetime,
 ) -> datetime:
+    """Determine the created time of the media.
+
+    Args:
+        source_ctx: The source context.
+        format_tags: The format tags.
+        streams: The streams.
+        default_fallback: The default fallback time.
+
+    Returns:
+        The created time.
+    """
     if source_ctx.created_time:
         return source_ctx.created_time.astimezone(timezone.utc)
 
@@ -400,6 +557,14 @@ def _determine_created_time(
 
 
 def _parse_datetime(value: str) -> Optional[datetime]:
+    """Parse a datetime string.
+
+    Args:
+        value: The datetime string.
+
+    Returns:
+        The parsed datetime, or None if it's not a valid datetime.
+    """
     value = value.strip()
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -429,11 +594,27 @@ def _parse_datetime(value: str) -> Optional[datetime]:
 
 
 def _format_datetime(value: datetime) -> str:
+    """Format a datetime object as a string.
+
+    Args:
+        value: The datetime object.
+
+    Returns:
+        The formatted datetime string.
+    """
     return value.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 @lru_cache(maxsize=4)
 def _binary_version(cmd: Sequence[str]) -> str:
+    """Get the version of a binary.
+
+    Args:
+        cmd: The command to run.
+
+    Returns:
+        The version of the binary, or "unknown" if it can't be determined.
+    """
     try:
         proc = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -446,6 +627,11 @@ def _binary_version(cmd: Sequence[str]) -> str:
 
 
 def _validate_against_schema(payload: SidecarDict) -> None:
+    """Validate a sidecar against the schema.
+
+    Args:
+        payload: The sidecar to validate.
+    """
     try:
         from .sidecar_schema import Sidecar
     except ImportError:
