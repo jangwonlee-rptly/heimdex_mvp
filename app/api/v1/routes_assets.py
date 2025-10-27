@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api import deps
 from app.core.auth import AuthContext
+from app.core.config import Settings
 from app.core.storage import Storage
 from app.db.models import JobType
 
@@ -20,6 +23,12 @@ def _verify_org(org_id: str, context: AuthContext) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="org_scope_mismatch")
 
 
+def _ensure_allowed_scheme(raw_uri: Any, settings: Settings) -> None:
+    scheme = urlparse(str(raw_uri)).scheme
+    if scheme and scheme not in settings.allowed_source_uri_schemes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"scheme not allowed: {scheme}")
+
+
 @router.post("/{asset_id}/thumbnails", response_model=schemas.JobAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
 async def enqueue_thumbnails(
     asset_id: str,
@@ -27,9 +36,11 @@ async def enqueue_thumbnails(
     service: deps.AuthenticatedService,
     context: deps.AuthDependency,
     response: Response,
+    settings: Settings = Depends(deps.get_app_settings),
     idempotency_key: str | None = Depends(deps.get_idempotency_key),
 ) -> schemas.JobAcceptedResponse:
     _verify_org(payload.org_id, context)
+    _ensure_allowed_scheme(payload.source_uri, settings)
 
     snapshot = await service.get_asset_snapshot(org_id=context.org_id, asset_id=asset_id)
     if not snapshot:
@@ -66,9 +77,11 @@ async def enqueue_sidecar(
     service: deps.AuthenticatedService,
     context: deps.AuthDependency,
     response: Response,
+    settings: Settings = Depends(deps.get_app_settings),
     idempotency_key: str | None = Depends(deps.get_idempotency_key),
 ) -> schemas.JobAcceptedResponse:
     _verify_org(payload.org_id, context)
+    _ensure_allowed_scheme(payload.source_uri, settings)
 
     snapshot = await service.get_asset_snapshot(org_id=context.org_id, asset_id=asset_id)
     if not snapshot:

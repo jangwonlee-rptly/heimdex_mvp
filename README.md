@@ -87,6 +87,11 @@ curl -s http://localhost:8000/v1/assets/<asset_id>/sidecar -H "${AUTH}"
 - **Formatting/Linting**: managed via `uv` (add tools as needed).
 - **OpenAPI**: regenerate with `uv run python -c "from app.main import app; import json, pathlib; pathlib.Path('openapi.json').write_text(json.dumps(app.openapi(), indent=2))"`.
 
+## Storage Backend Selection
+
+- Default: local filesystem (`HEIMDEX_STORAGE_BACKEND=local`), accepting only `file://` URIs.
+- Experimental: set `HEIMDEX_STORAGE_BACKEND=gcs` to allow `gs://` URIs. The GCS backend is a stub for now (methods raise `NotImplementedError`) but lets integrators exercise request paths.
+
 ## Simple Metadata Endpoint
 
 The upload-based `/metadata` route is considered legacy and is **disabled by default**. Set

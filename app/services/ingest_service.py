@@ -65,6 +65,9 @@ class IngestService:
         weak_threshold_bytes: int | None,
     ) -> dict[str, Any]:
         await self.ensure_org(org_id)
+        parsed_uri = urlparse(source_uri)
+        if parsed_uri.scheme == "gs":
+            raise NotImplementedError("gcs_commit_not_implemented")
         path = self._resolve_local_path(source_uri)
         if not path.exists():
             raise FileNotFoundError(source_uri)
@@ -112,6 +115,9 @@ class IngestService:
 
     async def probe(self, *, org_id: str, source_uri: str, weak_threshold_bytes: int | None) -> dict[str, Any]:
         await self.ensure_org(org_id)
+        parsed_uri = urlparse(source_uri)
+        if parsed_uri.scheme == "gs":
+            raise NotImplementedError("gcs_probe_not_implemented")
         path = self._resolve_local_path(source_uri)
         identity = await asyncio.to_thread(
             derive_local_asset_identity,

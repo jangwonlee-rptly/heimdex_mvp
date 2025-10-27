@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0", description="Redis URL for background jobs.")
 
     derived_root: Path = Field(default_factory=lambda: Path("derived"), description="Root for derived artefacts.")
-    storage_backend: Literal["local", "s3"] = Field(default="local", description="Active storage implementation.")
+    storage_backend: Literal["local", "gcs"] = Field(default="local", description="Active storage implementation.")
     local_storage_base_path: Path | None = Field(
         default=None,
         description="Override base path for local storage (defaults to derived_root).",
@@ -56,6 +56,12 @@ class Settings(BaseSettings):
         default=None,
         description="Optional push endpoint for metrics exporters.",
     )
+
+    @property
+    def allowed_source_uri_schemes(self) -> tuple[str, ...]:
+        if self.storage_backend == "gcs":
+            return ("gs", "file")
+        return ("file",)
 
 
 @lru_cache()

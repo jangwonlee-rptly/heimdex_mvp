@@ -9,12 +9,23 @@ from tests.conftest import uri_to_path
 
 
 @pytest.fixture()
+def gcs_client(monkeypatch, configure_environment):
+    monkeypatch.setenv("HEIMDEX_STORAGE_BACKEND", "gcs")
+    get_settings.cache_clear()
+    app = create_app()
+    with TestClient(app) as client:
+        yield client
+    get_settings.cache_clear()
+
+
+@pytest.fixture()
 def legacy_enabled_client(monkeypatch, configure_environment):
     monkeypatch.setenv("HEIMDEX_ENABLE_LEGACY", "true")
     get_settings.cache_clear()
     app = create_app()
     with TestClient(app) as client:
         yield client
+    get_settings.cache_clear()
 
 
 def test_v1_health_ok(client):
@@ -157,6 +168,33 @@ def test_thumbnail_job_idempotency(client, admin_headers, generated_video_file):
         headers={**admin_headers, "Idempotency-Key": key},
     )
     assert conflict_resp.status_code == 409
+
+
+def test_ingest_commit_rejects_gs_when_local_backend(client, admin_headers):
+    resp = client.post(
+        "/v1/ingest/commit",
+        json={
+            "org_id": "org-test",
+            "upload_id": "dummy",
+            "source_uri": "gs://bucket/key.mp4",
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 400
+    assert "scheme not allowed" in resp.json()["detail"]
+
+
+def test_ingest_commit_accepts_gs_when_gcs_backend(gcs_client, admin_headers):
+    resp = gcs_client.post(
+        "/v1/ingest/commit",
+        json={
+            "org_id": "org-test",
+            "upload_id": "dummy",
+            "source_uri": "gs://bucket/key.mp4",
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 501
 
 
 def test_legacy_metadata_absent_by_default(client):

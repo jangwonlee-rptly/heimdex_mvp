@@ -106,26 +106,62 @@ class LocalStorage(Storage):
         return PresignedURL(url=target.as_uri(), method="GET", headers=None)
 
 
-class S3Storage(Storage):
-    """Placeholder S3 implementation. Real integration pending secrets/bootstrap."""
+class GCSStorage(Storage):
+    """Skeleton Google Cloud Storage backend."""
 
-    def __init__(self, *_: object, **__: object) -> None:  # pragma: no cover - stub
-        raise NotImplementedError("S3 storage backend is not yet implemented.")
+    def __init__(self, *_: object, **__: object) -> None:
+        pass
+
+    def _parse_gs_uri(self, uri: str) -> tuple[str, str]:
+        parsed = urlparse(uri)
+        if parsed.scheme != "gs":
+            raise ValueError("expected gs:// URI")
+        bucket = parsed.netloc
+        key = parsed.path.lstrip("/")
+        if not bucket:
+            raise ValueError("missing bucket in gs:// URI")
+        if not key:
+            raise ValueError("missing object key in gs:// URI")
+        return bucket, key
+
+    def exists(self, uri: str) -> bool:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def stat(self, uri: str) -> StorageStat:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def read_text(self, uri: str) -> str:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def write_text(self, uri: str, payload: str) -> str:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def write_bytes(self, uri: str, payload: bytes) -> str:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def list(self, prefix: str) -> Iterable[str]:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def presign_put(self, key: str, *, content_type: str | None, expires_s: int = 3600) -> PresignedURL:
+        raise NotImplementedError("GCS storage not yet implemented")
+
+    def presign_get(self, key: str, *, expires_s: int = 3600) -> PresignedURL:
+        raise NotImplementedError("GCS storage not yet implemented")
 
 
 def get_storage(settings: Settings) -> Storage:
     base_path = settings.local_storage_base_path or settings.derived_root
     if settings.storage_backend == "local":
         return LocalStorage(base_path=Path(base_path))
-    if settings.storage_backend == "s3":  # pragma: no cover - waiting for integration
-        return S3Storage()
+    if settings.storage_backend == "gcs":
+        return GCSStorage()
     raise ValueError(f"Unsupported storage backend: {settings.storage_backend}")
 
 
 __all__ = [
     "Storage",
     "LocalStorage",
-    "S3Storage",
+    "GCSStorage",
     "StorageStat",
     "PresignedURL",
     "get_storage",

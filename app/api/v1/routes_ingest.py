@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import subprocess
+from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -17,6 +19,12 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
 def _verify_org(request_org: str, context: AuthContext) -> None:
     if request_org != context.org_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="org_scope_mismatch")
+
+
+def _ensure_allowed_scheme(raw_uri: Any, settings: Settings) -> None:
+    scheme = urlparse(str(raw_uri)).scheme
+    if scheme and scheme not in settings.allowed_source_uri_schemes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"scheme not allowed: {scheme}")
 
 
 @router.post("/init", response_model=schemas.IngestInitResponse, status_code=status.HTTP_201_CREATED)
@@ -44,8 +52,10 @@ async def commit_ingest(
     payload: schemas.IngestCommitRequest,
     service: deps.AuthenticatedService,
     context: deps.AuthDependency,
+    settings: Settings = Depends(deps.get_app_settings),
 ) -> schemas.IngestCommitResponse:
     _verify_org(payload.org_id, context)
+    _ensure_allowed_scheme(payload.source_uri, settings)
     try:
         result = await service.commit_upload(
             org_id=payload.org_id,
@@ -57,6 +67,8 @@ async def commit_ingest(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="source_not_found")
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)) from exc
     return schemas.IngestCommitResponse(**result)
 
 
@@ -65,8 +77,10 @@ async def probe_source(
     payload: schemas.ProbeRequest,
     service: deps.AuthenticatedService,
     context: deps.AuthDependency,
+    settings: Settings = Depends(deps.get_app_settings),
 ) -> schemas.SidecarModel:
     _verify_org(payload.org_id, context)
+    _ensure_allowed_scheme(payload.source_uri, settings)
     try:
         result = await service.probe(
             org_id=payload.org_id,
@@ -79,6 +93,8 @@ async def probe_source(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.stderr) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)) from exc
     return schemas.SidecarModel(**result)
 
 
