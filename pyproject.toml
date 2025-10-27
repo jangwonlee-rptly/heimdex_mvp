@@ -31,7 +31,8 @@ test = [
   "pytest",
   "pytest-cov",
   "httpx",
-  "fakeredis>=2.23.0"
+  "fakeredis>=2.23.0",
+  "pip-audit"
 ]
 
 [tool.uv]

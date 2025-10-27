@@ -1,16 +1,32 @@
+# For production, consider creating a dedicated network for better isolation:
+# networks:
+#   heimdex-net:
+#     driver: bridge
+
 services:
   postgres:
     profiles: ["dev"]
     image: postgres:15-alpine
     container_name: vna-postgres
     environment:
-      POSTGRES_DB: heimdex
-      POSTGRES_USER: heimdex
-      POSTGRES_PASSWORD: heimdex
+      POSTGRES_DB: ${HEIMDEX_DATABASE_DB:-heimdex}
+      POSTGRES_USER: ${HEIMDEX_DATABASE_USER:-heimdex}
+      POSTGRES_PASSWORD: ${HEIMDEX_DATABASE_PASSWORD:-heimdex}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${HEIMDEX_DATABASE_USER:-heimdex} -d ${HEIMDEX_DATABASE_DB:-heimdex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # For production, consider adding resource limits:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: '512M'
 
   redis:
     profiles: ["dev"]
@@ -18,6 +34,17 @@ services:
     container_name: vna-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # For production, consider adding resource limits:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: '512M'
 
   vna:
     profiles: ["dev"]
@@ -42,15 +69,23 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      - postgres
-      - redis
-    command: ["uv", "run", "--active", "fastapi", "run", "app/main.py", "--app", "app", "--host", "0.0.0.0", "--port", "8000"]
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/v1/health >/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 10s
+    # For production, consider adding resource limits:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: '1G'
 
 volumes:
   postgres-data:
+    name: heimdex-postgres-data

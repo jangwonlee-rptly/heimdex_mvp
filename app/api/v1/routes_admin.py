@@ -67,7 +67,7 @@ async def mint_dev_token(payload: DevTokenRequest, settings: Settings = Depends(
     if settings.jwt_audience:
         claims["aud"] = settings.jwt_audience
 
-    token = jwt.encode(claims, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    token = jwt.encode(claims, settings.secrets.jwt_secret, algorithm=settings.jwt_algorithm)
     return DevTokenResponse(token=token)
 
 
