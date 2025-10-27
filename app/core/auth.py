@@ -21,12 +21,16 @@ class AuthContext:
 
 
 def _decode_token(token: str, settings: Settings) -> dict:
+    # In a real-world scenario, you'd want to use a more robust JWT library
+    # that supports key rotation (e.g., via JWKS).
     try:
         payload = jwt.decode(
             token,
-            settings.jwt_secret,
+            settings.secrets.jwt_secret,
             algorithms=[settings.jwt_algorithm],
-            options={"verify_aud": False},
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
+            options={"verify_aud": settings.jwt_audience is not None},
         )
     except jwt.PyJWTError as exc:  # pragma: no cover - library handles message
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_token") from exc

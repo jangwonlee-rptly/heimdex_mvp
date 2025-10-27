@@ -10,23 +10,21 @@ from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-load_dotenv(".env", override=False)
+class Secrets(BaseSettings):
+    """Secrets configuration, loaded from the environment or a secrets management service."""
 
-_ENV_ALIAS_MAP = {
-    "HEIMDEX_ENV": "HEIMDEX_ENVIRONMENT",
-    "HEIMDEX_DB_URL": "HEIMDEX_DATABASE_URL",
-    "HEIMDEX_JOB_BACKEND": "HEIMDEX_JOB_QUEUE_BACKEND",
-}
+    model_config = SettingsConfigDict(
+        env_prefix="HEIMDEX_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
+    jwt_secret: str = Field(default="change-me", description="Signing secret for stub JWT validation.")
 
-def _apply_env_aliases() -> None:
-    for source, target in _ENV_ALIAS_MAP.items():
-        value = os.getenv(source)
-        if value:
-            os.environ[target] = value
-
-
-_apply_env_aliases()
+    @classmethod
+    def from_settings(cls, settings: "Settings") -> "Secrets":
+        return cls()
 
 
 class Settings(BaseSettings):
@@ -66,7 +64,6 @@ class Settings(BaseSettings):
     max_upload_size_bytes: int = Field(default=50 * 1024 * 1024, description="Soft limit for ingest uploads.")
     enable_legacy: bool = Field(default=False, description="Enable legacy /metadata endpoints temporarily.")
 
-    jwt_secret: str = Field(default="change-me", description="Signing secret for stub JWT validation.")
     jwt_algorithm: str = Field(default="HS256", description="Algorithm used for JWT tokens.")
     jwt_issuer: Optional[str] = None
     jwt_audience: Optional[str] = None
@@ -84,6 +81,8 @@ class Settings(BaseSettings):
     allow_http_source_schemes: tuple[str, ...] = Field(
         default=("file", "s3", "gs"),
         description="Allowed URI schemes for source media references.")
+
+    secrets: Secrets = Field(default_factory=Secrets, description="Holds sensitive configuration.")
 
     metrics_endpoint: HttpUrl | None = Field(
         default=None,
@@ -119,8 +118,29 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     load_dotenv(".env", override=False)
-    _apply_env_aliases()
-    return Settings()
+
+    _ENV_ALIAS_MAP = {
+        "HEIMDEX_ENV": "HEIMDEX_ENVIRONMENT",
+        "HEIMDEX_DB_URL": "HEIMDEX_DATABASE_URL",
+        "HEIMDEX_JOB_BACKEND": "HEIMDEX_JOB_QUEUE_BACKEND",
+    }
+
+    for source, target in _ENV_ALIAS_MAP.items():
+        value = os.getenv(source)
+        if value:
+            os.environ[target] = value
+
+    settings = Settings()
+
+    # In a real application, you would fetch secrets from a secure vault
+    # instead of just loading them from the environment.
+    secrets = Secrets.from_settings(settings)
+
+    if settings.environment == "production" and secrets.jwt_secret == "change-me":
+        raise ValueError("Production environment must have a non-default JWT secret.")
+
+    settings.secrets = secrets
+    return settings
 
 
 __all__ = ["Settings", "get_settings"]
